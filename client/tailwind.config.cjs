@@ -3,20 +3,31 @@
   theme: {
     extend: {
       colors: {
-        shell: '#e0e5ec',
-        panel: '#f0f2f5',
-        muted: '#d1d9e6',
-        ink: '#2d3436',
-        accent: '#ff4757'
+        shell: '#FFFDF5',
+        panel: '#FFFFFF',
+        muted: '#F1F5F9',
+        ink: '#1E293B',
+        accent: '#8B5CF6',
+        secondary: '#F472B6',
+        tertiary: '#FBBF24',
+        quaternary: '#34D399',
+        borderc: '#E2E8F0'
       },
       fontFamily: {
-        sans: ['Inter', 'sans-serif'],
+        sans: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+        display: ['Outfit', 'system-ui', 'sans-serif'],
         mono: ['JetBrains Mono', 'monospace']
       },
+      borderRadius: {
+        sm: '8px',
+        md: '16px',
+        lg: '24px'
+      },
       boxShadow: {
-        card: '8px 8px 16px #babecc, -8px -8px 16px #ffffff',
-        pressed: 'inset 4px 4px 10px #babecc, inset -4px -4px 10px #ffffff',
-        recessed: 'inset 6px 6px 12px #c2c9d3, inset -6px -6px 12px #ffffff'
+        pop: '4px 4px 0px 0px #1E293B',
+        'pop-hover': '6px 6px 0px 0px #1E293B',
+        'pop-active': '2px 2px 0px 0px #1E293B',
+        sticker: '8px 8px 0px 0px #E2E8F0'
       }
     }
   },

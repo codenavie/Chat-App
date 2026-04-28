@@ -11,6 +11,11 @@ export function validateRoomId(roomId) {
   return roomRegex.test(String(roomId || '').trim());
 }
 
+export function validatePassword(password) {
+  const value = String(password || '');
+  return value.length >= 6 && value.length <= 64;
+}
+
 export function isValidPayload({ roomId, username }) {
   const safeName = sanitizeName(username);
   return {

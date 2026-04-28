@@ -4,6 +4,7 @@ import { ref, computed } from 'vue';
 export const useCollabStore = defineStore('collab', () => {
   const roomId = ref('');
   const username = ref('');
+  const password = ref('');
   const connected = ref(false);
   const users = ref([]);
 
@@ -25,6 +26,7 @@ export const useCollabStore = defineStore('collab', () => {
   return {
     roomId,
     username,
+    password,
     connected,
     users,
     activeCount,

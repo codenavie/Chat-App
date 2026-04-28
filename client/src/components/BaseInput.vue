@@ -1,11 +1,12 @@
 ﻿<template>
   <label class="block">
-    <span class="mb-2 block text-sm font-medium">{{ label }}</span>
+    <span class="mb-2 block text-xs font-bold uppercase tracking-wider text-ink">{{ label }}</span>
     <input
+      :type="type"
       :value="modelValue"
       :placeholder="placeholder"
       :maxlength="maxLength"
-      class="w-full rounded-xl border-none bg-muted px-4 py-2 font-mono text-sm text-ink shadow-recessed outline-none focus:ring-2 focus:ring-accent/50"
+      class="w-full rounded-lg border-2 border-slate-300 bg-white px-4 py-3 text-sm text-ink outline-none transition-all focus:border-accent focus:shadow-pop"
       @input="$emit('update:modelValue', $event.target.value)"
     />
   </label>
@@ -28,6 +29,10 @@ defineProps({
   maxLength: {
     type: Number,
     default: 64
+  },
+  type: {
+    type: String,
+    default: 'text'
   }
 });
 

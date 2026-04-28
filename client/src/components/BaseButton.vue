@@ -1,6 +1,6 @@
 ﻿<template>
   <button
-    class="w-full rounded-xl bg-panel px-4 py-2 font-medium text-ink shadow-card transition active:translate-y-[1px] active:shadow-pressed disabled:opacity-60"
+    class="w-full rounded-full border-2 border-ink bg-accent px-4 py-3 font-bold text-white shadow-pop transition-all duration-300 hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-pop-hover active:translate-x-0.5 active:translate-y-0.5 active:shadow-pop-active disabled:opacity-60"
     :disabled="disabled"
     type="button"
   >

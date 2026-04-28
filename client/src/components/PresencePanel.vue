@@ -1,10 +1,11 @@
 ﻿<template>
-  <BaseCard title="Presence Grid" :status="`${users.length} ACTIVE`">
+  <BaseCard title="Presence" :status="`${users.length} ACTIVE`">
     <ul class="space-y-2">
       <li
-        v-for="user in users"
+        v-for="(user, index) in users"
         :key="user.id"
-        class="flex items-center justify-between rounded-lg bg-muted px-3 py-2 shadow-recessed"
+        class="flex items-center justify-between rounded-lg border-2 border-ink bg-white px-3 py-2"
+        :class="index % 3 === 0 ? 'shadow-[4px_4px_0px_0px_#F472B6]' : index % 3 === 1 ? 'shadow-[4px_4px_0px_0px_#FBBF24]' : 'shadow-[4px_4px_0px_0px_#34D399]'"
       >
         <span class="text-sm font-medium">{{ user.username }}</span>
         <span class="font-mono text-xs text-ink/70">{{ user.id.slice(0, 6) }}</span>
