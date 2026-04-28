@@ -5,6 +5,18 @@ node_modules/
 .env
 .env.*
 !.env.example
+*.local
+*.secret
+secrets/
+
+# Keys and certs
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+id_rsa
+id_ed25519
 
 # Logs
 npm-debug.log*
@@ -41,6 +53,7 @@ Thumbs.db
 # Local tooling cache
 .cache/
 .eslintcache
+.turbo/
 
 # Optional local persistence files
 *.sqlite
