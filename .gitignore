@@ -1,0 +1,52 @@
+﻿# Dependencies
+node_modules/
+
+# Env files (secrets)
+.env
+.env.*
+!.env.example
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+
+# Build outputs
+dist/
+build/
+coverage/
+.vite/
+
+# Runtime/temp
+*.pid
+*.seed
+*.pid.lock
+.tmp/
+temp/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor/IDE
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# Local tooling cache
+.cache/
+.eslintcache
+
+# Optional local persistence files
+*.sqlite
+*.db
+
+# Keep lockfiles tracked for reproducible installs
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
