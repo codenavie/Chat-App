@@ -1,12 +1,12 @@
-﻿<template>
+<template>
   <label class="block">
-    <span class="mb-2 block text-xs font-bold uppercase tracking-wider text-ink">{{ label }}</span>
+    <span class="mb-2 block text-xs font-mono uppercase tracking-[0.16em] text-textmuted">{{ label }}</span>
     <input
       :type="type"
       :value="modelValue"
       :placeholder="placeholder"
       :maxlength="maxLength"
-      class="w-full rounded-lg border-2 border-slate-300 bg-white px-4 py-3 text-sm text-ink outline-none transition-all focus:border-accent focus:shadow-pop"
+      class="ui-input text-sm"
       @input="$emit('update:modelValue', $event.target.value)"
     />
   </label>

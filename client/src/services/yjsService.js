@@ -26,6 +26,7 @@ class YjsRoomBinding {
     this.socket = null;
     this.roomId = null;
     this.unsubscribers = [];
+    this.resyncTimer = null;
   }
 
   init(roomId) {
@@ -49,19 +50,15 @@ class YjsRoomBinding {
 
     this.socket.on('doc:state', ({ update }) => {
       Y.applyUpdate(this.doc, Uint8Array.from(update), 'remote');
-      this.ensureWorkspace();
     });
 
-    this.ensureWorkspace();
     this.socket.emit('doc:request-state', { roomId: this.roomId });
-  }
 
-  ensureWorkspace() {
-    if (!this.filesMap || this.filesMap.size > 0) return;
-    const main = new Y.Text();
-    main.insert(0, '// Start collaborating in real-time...\n');
-    this.filesMap.set('main.js', main);
-    this.savedMap.set('main.js', Date.now());
+    this.resyncTimer = setInterval(() => {
+      if (this.socket && this.roomId) {
+        this.socket.emit('doc:request-state', { roomId: this.roomId });
+      }
+    }, 2500);
   }
 
   listFiles() {
@@ -175,9 +172,25 @@ class YjsRoomBinding {
     const current = text.toString();
     if (current === nextText) return;
 
+    let start = 0;
+    let endCurrent = current.length;
+    let endNext = nextText.length;
+
+    while (start < endCurrent && start < endNext && current[start] === nextText[start]) {
+      start += 1;
+    }
+
+    while (endCurrent > start && endNext > start && current[endCurrent - 1] === nextText[endNext - 1]) {
+      endCurrent -= 1;
+      endNext -= 1;
+    }
+
+    const deleteLen = endCurrent - start;
+    const insertText = nextText.slice(start, endNext);
+
     this.doc.transact(() => {
-      text.delete(0, text.length);
-      text.insert(0, nextText);
+      if (deleteLen > 0) text.delete(start, deleteLen);
+      if (insertText) text.insert(start, insertText);
     }, 'local');
   }
 
@@ -249,6 +262,11 @@ class YjsRoomBinding {
       try { unsub(); } catch {}
     });
     this.unsubscribers = [];
+
+    if (this.resyncTimer) {
+      clearInterval(this.resyncTimer);
+      this.resyncTimer = null;
+    }
 
     if (this.socket) {
       this.socket.off('doc:sync');

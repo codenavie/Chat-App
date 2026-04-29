@@ -1,9 +1,9 @@
-﻿<template>
-  <div v-if="open" class="fixed inset-0 z-50 flex items-center justify-center bg-ink/30 p-4">
+<template>
+  <div v-if="open" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
     <div class="play-card w-full max-w-md p-5">
       <div class="mb-4 flex items-center justify-between">
-        <h3 class="font-display text-2xl font-extrabold">Join Private Room</h3>
-        <button class="rounded-full border-2 border-ink bg-white px-3 py-1 text-sm font-bold shadow-pop active:shadow-pop-active" @click="$emit('close')">Close</button>
+        <h3 class="bg-gradient-to-b from-white via-white/95 to-white/70 bg-clip-text font-display text-2xl font-semibold tracking-tight text-transparent">Join Private Room</h3>
+        <button class="ui-btn ui-btn-muted px-3 py-1 text-sm font-semibold" @click="$emit('close')">Close</button>
       </div>
 
       <div class="play-pattern mb-4"></div>
@@ -13,7 +13,7 @@
         <BaseInput v-model="roomValue" label="Room ID" placeholder="Enter room ID" :max-length="24" />
         <BaseInput v-model="passwordValue" type="password" label="Room Password" placeholder="Enter room password" :max-length="64" />
 
-        <p v-if="error" class="rounded-lg border-2 border-ink bg-secondary/25 px-3 py-2 text-xs font-medium text-ink shadow-pop">
+        <p v-if="error" class="rounded-lg border border-red-400/40 bg-red-500/10 px-3 py-2 text-xs text-red-200">
           {{ error }}
         </p>
 

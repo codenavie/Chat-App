@@ -10,22 +10,20 @@ export class RoomManager {
     this.rooms = new Map();
   }
 
-  generateRoomId() {
-    const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    let roomId = '';
-
-    do {
-      roomId = Array.from({ length: 8 }, () => alphabet[Math.floor(Math.random() * alphabet.length)]).join('');
-    } while (this.rooms.has(roomId));
-
-    return roomId;
-  }
-
   ensureRoom(roomId, options = {}) {
     if (!this.rooms.has(roomId)) {
+      const doc = new Y.Doc();
+      const filesMap = doc.getMap('files');
+      const savedMap = doc.getMap('savedAt');
+      const main = new Y.Text();
+      main.insert(0, '// Start collaborating in real-time...\n');
+      filesMap.set('main.js', main);
+      savedMap.set('main.js', Date.now());
+
       this.rooms.set(roomId, {
-        doc: new Y.Doc(),
+        doc,
         users: new Map(),
+        messages: [],
         isPrivate: Boolean(options.password),
         passwordHash: options.password ? hashPassword(options.password) : null,
         createdAt: Date.now()
@@ -75,5 +73,21 @@ export class RoomManager {
     const room = this.getRoom(roomId);
     if (!room) return [];
     return Array.from(room.users.values());
+  }
+
+  getMessages(roomId) {
+    const room = this.getRoom(roomId);
+    if (!room) return [];
+    return room.messages.slice(-100);
+  }
+
+  addMessage(roomId, message) {
+    const room = this.getRoom(roomId);
+    if (!room) return null;
+    room.messages.push(message);
+    if (room.messages.length > 100) {
+      room.messages = room.messages.slice(-100);
+    }
+    return message;
   }
 }
