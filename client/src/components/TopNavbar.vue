@@ -1,12 +1,9 @@
 <template>
   <header class="play-card mb-6 overflow-hidden px-6 py-5">
-    <div class="pointer-events-none absolute -left-20 -top-24 h-60 w-60 rounded-full bg-accent/25 blur-3xl"></div>
-    <div class="pointer-events-none absolute -right-20 -bottom-24 h-60 w-60 rounded-full bg-indigo-400/20 blur-3xl"></div>
-
     <div class="relative flex flex-wrap items-center justify-between gap-4">
       <div>
-        <p class="font-mono text-xs uppercase tracking-[0.22em] text-textmuted">Real-Time Playground</p>
-        <h1 class="bg-gradient-to-b from-white via-white/95 to-white/70 bg-clip-text font-display text-2xl font-semibold tracking-tight text-transparent">
+        <p class="font-mono text-xs uppercase tracking-[0.15em] text-accent">Real-Time Playground</p>
+        <h1 class="font-display text-4xl font-normal tracking-tight text-ink">
           Developer Collaboration Platform
         </h1>
       </div>
@@ -14,26 +11,59 @@
       <div class="flex flex-wrap items-center justify-end gap-3">
         <div
           v-if="isCreator && creatorRoomInfo?.roomId && creatorRoomInfo?.password"
-          class="flex flex-wrap items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5"
+          class="flex flex-wrap items-center gap-2 rounded-md border border-borderc bg-muted px-3 py-1.5"
         >
-          <span class="font-mono text-[10px] uppercase tracking-[0.16em] text-textmuted">Room</span>
-          <span class="rounded-full border border-white/10 bg-white/5 px-2 py-1 font-mono text-xs">{{ creatorRoomInfo.roomId }}</span>
+          <span class="font-mono text-[10px] uppercase tracking-[0.15em] text-textmuted">Room</span>
+          <span class="rounded-md border border-borderc bg-panel px-2 py-1 font-mono text-xs text-ink">{{ creatorRoomInfo.roomId }}</span>
           <button class="ui-btn ui-btn-muted px-2 py-1 text-[10px] font-semibold uppercase" @click="$emit('copy-room-id', creatorRoomInfo.roomId)">Copy ID</button>
-          <span class="rounded-full border border-white/10 bg-white/5 px-2 py-1 font-mono text-xs">{{ creatorRoomInfo.password }}</span>
+          <span class="rounded-md border border-borderc bg-panel px-2 py-1 font-mono text-xs text-ink">{{ creatorRoomInfo.password }}</span>
           <button class="ui-btn ui-btn-muted px-2 py-1 text-[10px] font-semibold uppercase" @click="$emit('copy-password', creatorRoomInfo.password)">Copy PW</button>
         </div>
 
         <div class="status-pill flex items-center gap-2">
-          <span class="h-2.5 w-2.5 rounded-full" :class="online ? 'bg-emerald-400' : 'bg-slate-500'" />
+          <span class="h-2.5 w-2.5 rounded-full" :class="online ? 'bg-green-600' : 'bg-slate-400'" />
           <span>{{ online ? 'ONLINE' : 'OFFLINE' }}</span>
         </div>
+        <button class="ui-btn ui-btn-muted px-2 py-1" type="button" :aria-label="theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'" @click="toggleTheme">
+          <Sun v-if="theme === 'dark'" class="h-4 w-4" :stroke-width="2" />
+          <Moon v-else class="h-4 w-4" :stroke-width="2" />
+        </button>
       </div>
     </div>
   </header>
 </template>
 
 <script setup>
+import { onMounted, ref, watch } from 'vue';
+import { Moon, Sun } from 'lucide-vue-next';
+
 defineEmits(['copy-room-id', 'copy-password']);
+
+const theme = ref('light');
+
+function applyTheme(nextTheme) {
+  document.documentElement.setAttribute('data-theme', nextTheme);
+}
+
+function toggleTheme() {
+  theme.value = theme.value === 'dark' ? 'light' : 'dark';
+}
+
+onMounted(() => {
+  const saved = localStorage.getItem('collab-theme');
+  if (saved === 'dark' || saved === 'light') {
+    theme.value = saved;
+  } else {
+    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    theme.value = prefersDark ? 'dark' : 'light';
+  }
+  applyTheme(theme.value);
+});
+
+watch(theme, (nextTheme) => {
+  applyTheme(nextTheme);
+  localStorage.setItem('collab-theme', nextTheme);
+});
 
 defineProps({
   online: {

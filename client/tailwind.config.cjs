@@ -3,44 +3,35 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        shell: '#050506',
-        deep: '#020203',
-        panel: '#0a0a0c',
-        muted: 'rgba(255,255,255,0.05)',
-        ink: '#EDEDEF',
-        textmuted: '#8A8F98',
-        accent: '#5E6AD2',
-        'accent-bright': '#6872D9',
-        'accent-glow': 'rgba(94,106,210,0.3)',
-        borderc: 'rgba(255,255,255,0.06)',
-        secondary: '#5E6AD2',
-        tertiary: '#6872D9',
-        quaternary: '#22c55e'
+        shell: '#FAFAF8',
+        deep: '#F5F3F0',
+        panel: '#FFFFFF',
+        muted: '#F5F3F0',
+        ink: '#1A1A1A',
+        textmuted: '#6B6B6B',
+        accent: '#B8860B',
+        'accent-bright': '#D4A84B',
+        'accent-glow': 'rgba(184,134,11,0.24)',
+        borderc: '#E8E4DF',
+        secondary: '#B8860B',
+        tertiary: '#D4A84B',
+        quaternary: '#1A1A1A'
       },
       fontFamily: {
-        sans: ['Inter', 'Geist Sans', 'system-ui', 'sans-serif'],
-        display: ['Inter', 'Geist Sans', 'system-ui', 'sans-serif'],
-        mono: ['JetBrains Mono', 'monospace']
+        sans: ['Source Sans 3', 'system-ui', 'sans-serif'],
+        display: ['Playfair Display', 'Georgia', 'serif'],
+        mono: ['IBM Plex Mono', 'monospace']
       },
       borderRadius: {
-        sm: '8px',
-        md: '16px',
-        lg: '16px'
+        sm: '6px',
+        md: '8px',
+        lg: '8px'
       },
       boxShadow: {
-        pop: '0 0 0 1px rgba(94,106,210,0.5), 0 4px 12px rgba(94,106,210,0.3), inset 0 1px 0 rgba(255,255,255,0.2)',
-        'pop-hover': '0 0 0 1px rgba(94,106,210,0.65), 0 8px 20px rgba(94,106,210,0.35), inset 0 1px 0 rgba(255,255,255,0.25)',
-        'pop-active': '0 0 0 1px rgba(94,106,210,0.45), 0 2px 8px rgba(94,106,210,0.2), inset 0 1px 0 rgba(255,255,255,0.15)',
-        sticker: '0 0 0 1px rgba(255,255,255,0.06), 0 2px 20px rgba(0,0,0,0.4), 0 0 40px rgba(0,0,0,0.2)'
-      },
-      keyframes: {
-        float: {
-          '0%, 100%': { transform: 'translateY(0) rotate(0deg)' },
-          '50%': { transform: 'translateY(-20px) rotate(1deg)' }
-        }
-      },
-      animation: {
-        float: 'float 9s ease-in-out infinite'
+        pop: '0 1px 2px rgba(26,26,26,0.04)',
+        'pop-hover': '0 4px 12px rgba(26,26,26,0.06)',
+        'pop-active': '0 1px 2px rgba(26,26,26,0.04)',
+        sticker: '0 4px 12px rgba(26,26,26,0.06)'
       }
     }
   },
