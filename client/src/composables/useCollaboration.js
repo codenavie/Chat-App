@@ -6,6 +6,13 @@ import yjsService from '../services/yjsService';
 
 const roomRegex = /^[A-Za-z0-9_-]{3,24}$/;
 const roomAlphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const MAX_CHAT_MESSAGES = 100;
+const MAX_ACTIVITY_ITEMS = 8;
+const CURSOR_EMIT_DELAY_MS = 90;
+const CURSOR_HIDE_DELAY_MS = 2200;
+const CARET_EMIT_DELAY_MS = 120;
+const CARET_HIDE_DELAY_MS = 2500;
+const ACTIVITY_EMIT_DELAY_MS = 120;
 
 function buildExplorerTree(folders, files) {
   const root = { id: '', name: '', type: 'folder', children: [] };
@@ -79,11 +86,27 @@ export function useCollaboration() {
   let lastCursorPoint = null;
   let unbindSocketEvents = () => {};
 
+  function emitWithAck(eventName, payload) {
+    return new Promise((resolve) => {
+      socket.value?.emit(eventName, payload, (ack) => resolve(ack));
+    });
+  }
+
   const explorerTree = computed(() => buildExplorerTree(folders.value, files.value));
   const canJoin = computed(() => roomRegex.test(store.roomId) && store.username.trim().length >= 2 && store.password.length >= 6);
   const canCreate = computed(() => roomRegex.test(store.roomId) && store.username.trim().length >= 2 && store.password.length >= 6);
 
+  function getSwalTheme() {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    return {
+      background: isDark ? '#1a1a19' : '#ffffff',
+      color: isDark ? '#f3f1ed' : '#1a1a1a',
+      confirmButtonColor: '#b8860b'
+    };
+  }
+
   function bindLifecycle() {
+    // One shared socket connection for all real-time channels.
     socket.value = socketService.connect();
     unbindSocketEvents();
 
@@ -92,7 +115,7 @@ export function useCollaboration() {
     const onPresenceUpdate = ({ users }) => {
       store.setUsers(users);
       const activeIds = new Set((users || []).map((u) => u.id));
-      activityFeed.value = activityFeed.value.filter((a) => activeIds.has(a.userId)).slice(0, 8);
+      activityFeed.value = activityFeed.value.filter((a) => activeIds.has(a.userId)).slice(0, MAX_ACTIVITY_ITEMS);
       remoteCursors.value = remoteCursors.value.filter((c) => activeIds.has(c.userId));
       remoteCarets.value = remoteCarets.value.filter((c) => activeIds.has(c.userId));
     };
@@ -100,7 +123,7 @@ export function useCollaboration() {
       chatMessages.value = Array.isArray(messages) ? messages : [];
     };
     const onChatNew = (message) => {
-      chatMessages.value = [...chatMessages.value, message].slice(-100);
+      chatMessages.value = [...chatMessages.value, message].slice(-MAX_CHAT_MESSAGES);
     };
     const onUserJoined = ({ username }) => {
       if (isCreator.value && username && username !== store.username) {
@@ -111,8 +134,7 @@ export function useCollaboration() {
           title: `${username} joined your room`,
           timer: 1800,
           showConfirmButton: false,
-          background: '#0a0a0c',
-          color: '#EDEDEF'
+          ...getSwalTheme()
         });
       }
     };
@@ -157,7 +179,7 @@ export function useCollaboration() {
   }
 
   function showSuccess(title, text) {
-    Swal.fire({ icon: 'success', title, text, confirmButtonText: 'OK', background: '#f0f2f5', color: '#2d3436', confirmButtonColor: '#ff4757' });
+    Swal.fire({ icon: 'success', title, text, confirmButtonText: 'OK', ...getSwalTheme() });
   }
 
   function bindActiveFile(fileName) {
@@ -167,6 +189,7 @@ export function useCollaboration() {
     if (stopTextObserver) stopTextObserver();
     if (stopSavedObserver) stopSavedObserver();
 
+    // CRDT text updates from local and remote peers flow through here.
     stopTextObserver = yjsService.onFileTextChange(fileName, (value) => {
       content.value = value;
       dirty.value = value !== lastSavedSnapshot;
@@ -208,6 +231,33 @@ export function useCollaboration() {
     joined.value = true;
   }
 
+  function resetRoomState() {
+    if (stopFilesObserver) stopFilesObserver();
+    if (stopFoldersObserver) stopFoldersObserver();
+    if (stopTextObserver) stopTextObserver();
+    if (stopSavedObserver) stopSavedObserver();
+    stopFilesObserver = null;
+    stopFoldersObserver = null;
+    stopTextObserver = null;
+    stopSavedObserver = null;
+    files.value = [];
+    folders.value = [];
+    content.value = '';
+    activeFile.value = '';
+    savedAt.value = null;
+    dirty.value = false;
+    lastSavedSnapshot = '';
+    chatMessages.value = [];
+    chatInput.value = '';
+    activityFeed.value = [];
+    remoteCursors.value = [];
+    remoteCarets.value = [];
+    joined.value = false;
+    isCreator.value = false;
+    creatorRoomInfo.value = { roomId: '', password: '' };
+    yjsService.dispose();
+  }
+
   async function createPrivateRoom() {
     if (!canCreate.value || !socket.value) return;
     if (!store.connected) {
@@ -219,23 +269,19 @@ export function useCollaboration() {
     loading.value = true;
     const payload = { roomId: store.roomId.trim(), username: store.username.trim().slice(0, 24), password: store.password };
 
-    await new Promise((resolve) => {
-      socket.value.emit('room:create', payload, (ack) => {
-        if (ack?.ok) {
-          if (ack.roomId !== payload.roomId) {
-            error.value = 'Server returned a different Room ID. Restart server and try again.';
-          } else {
-            bindRoom(payload.roomId, payload.username);
-            isCreator.value = true;
-            creatorRoomInfo.value = { roomId: payload.roomId, password: payload.password };
-            showSuccess('Room Created', `Room ${payload.roomId} created successfully.`);
-          }
-        } else {
-          error.value = ack?.error || 'Unable to create room';
-        }
-        resolve();
-      });
-    });
+    const ack = await emitWithAck('room:create', payload);
+    if (ack?.ok) {
+      if (ack.roomId !== payload.roomId) {
+        error.value = 'Server returned a different Room ID. Restart server and try again.';
+      } else {
+        bindRoom(payload.roomId, payload.username);
+        isCreator.value = true;
+        creatorRoomInfo.value = { roomId: payload.roomId, password: payload.password };
+        showSuccess('Room Created', `Room ${payload.roomId} created successfully.`);
+      }
+    } else {
+      error.value = ack?.error || 'Unable to create room';
+    }
 
     loading.value = false;
   }
@@ -256,22 +302,28 @@ export function useCollaboration() {
     loading.value = true;
     const payload = { roomId: String(roomId || '').trim(), username: String(username || '').trim().slice(0, 24), password: String(password || '') };
 
-    await new Promise((resolve) => {
-      socket.value.emit('room:join', payload, (ack) => {
-        if (ack?.ok) {
-          bindRoom(payload.roomId, payload.username);
-          isCreator.value = false;
-          creatorRoomInfo.value = { roomId: '', password: '' };
-          store.password = '';
-          showSuccess('Joined Room', 'You joined the room successfully.');
-        } else {
-          error.value = ack?.error || 'Unable to join room';
-        }
-        resolve();
-      });
-    });
+    const ack = await emitWithAck('room:join', payload);
+    if (ack?.ok) {
+      bindRoom(payload.roomId, payload.username);
+      isCreator.value = false;
+      creatorRoomInfo.value = { roomId: '', password: '' };
+      store.password = '';
+      showSuccess('Joined Room', 'You joined the room successfully.');
+    } else {
+      error.value = ack?.error || 'Unable to join room';
+    }
 
     loading.value = false;
+  }
+
+  async function leaveRoom() {
+    if (joined.value && socket.value && store.roomId) {
+      await emitWithAck('room:leave', { roomId: store.roomId });
+    }
+    hideCursorPresence();
+    hideCaretPresence();
+    store.setUsers([]);
+    resetRoomState();
   }
 
   function sendChatMessage() {
@@ -282,7 +334,15 @@ export function useCollaboration() {
     chatInput.value = '';
   }
 
-  function updateContent(nextValue) {
+  function updateContent(payload) {
+    if (!activeFile.value) return;
+
+    if (payload && typeof payload === 'object' && Object.prototype.hasOwnProperty.call(payload, 'inputType')) {
+      const applied = yjsService.applyTextInput(activeFile.value, payload);
+      if (applied) return;
+    }
+
+    const nextValue = typeof payload === 'string' ? payload : String(payload?.value ?? '');
     content.value = nextValue;
     yjsService.setFileText(activeFile.value, nextValue);
     dirty.value = nextValue !== lastSavedSnapshot;
@@ -306,11 +366,11 @@ export function useCollaboration() {
         y: payload.y,
         visible: true
       });
-    }, 90);
+    }, CURSOR_EMIT_DELAY_MS);
     if (cursorHideTimer) clearTimeout(cursorHideTimer);
     cursorHideTimer = setTimeout(() => {
       hideCursorPresence();
-    }, 2200);
+    }, CURSOR_HIDE_DELAY_MS);
   }
 
   function hideCursorPresence() {
@@ -337,11 +397,11 @@ export function useCollaboration() {
         preview: payload.preview,
         visible: true
       });
-    }, 120);
+    }, CARET_EMIT_DELAY_MS);
     if (caretHideTimer) clearTimeout(caretHideTimer);
     caretHideTimer = setTimeout(() => {
       hideCaretPresence();
-    }, 2500);
+    }, CARET_HIDE_DELAY_MS);
   }
 
   function hideCaretPresence() {
@@ -359,7 +419,7 @@ export function useCollaboration() {
   function selectFile(fileName) { bindActiveFile(fileName); }
 
   async function createFile(parentFolder = '') {
-    const { value } = await Swal.fire({ title: 'Create File', input: 'text', inputLabel: 'File name', inputPlaceholder: 'example: app.js', showCancelButton: true, confirmButtonColor: '#8B5CF6', background: '#FFFDF5', color: '#1E293B' });
+    const { value } = await Swal.fire({ title: 'Create File', input: 'text', inputLabel: 'File name', inputPlaceholder: 'example: app.js', showCancelButton: true, ...getSwalTheme() });
     if (!value) return;
     const result = yjsService.createFile(value, parentFolder);
     if (!result.ok) { error.value = result.error; return; }
@@ -368,7 +428,7 @@ export function useCollaboration() {
   }
 
   async function createFolder(parent = '') {
-    const { value } = await Swal.fire({ title: 'Create Folder', input: 'text', inputLabel: 'Folder name', inputPlaceholder: 'example: src/components', showCancelButton: true, confirmButtonColor: '#34D399', background: '#FFFDF5', color: '#1E293B' });
+    const { value } = await Swal.fire({ title: 'Create Folder', input: 'text', inputLabel: 'Folder name', inputPlaceholder: 'example: src/components', showCancelButton: true, ...getSwalTheme() });
     if (!value) return;
     const path = parent ? `${parent}/${value}` : value;
     const result = yjsService.createFolder(path);
@@ -377,7 +437,7 @@ export function useCollaboration() {
   }
 
   async function renameFile(fileName) {
-    const { value } = await Swal.fire({ title: 'Rename File', input: 'text', inputLabel: 'New file name', inputValue: fileName, showCancelButton: true, confirmButtonColor: '#8B5CF6', background: '#FFFDF5', color: '#1E293B' });
+    const { value } = await Swal.fire({ title: 'Rename File', input: 'text', inputLabel: 'New file name', inputValue: fileName, showCancelButton: true, ...getSwalTheme() });
     if (!value || value === fileName) return;
     const result = yjsService.renameFile(fileName, value);
     if (!result.ok) { error.value = result.error; return; }
@@ -386,7 +446,7 @@ export function useCollaboration() {
   }
 
   async function deleteFile(fileName) {
-    const confirm = await Swal.fire({ title: 'Delete File?', text: `This will remove ${fileName} for everyone in the room.`, icon: 'warning', showCancelButton: true, confirmButtonText: 'Delete', confirmButtonColor: '#F472B6', background: '#FFFDF5', color: '#1E293B' });
+    const confirm = await Swal.fire({ title: 'Delete File?', text: `This will remove ${fileName} for everyone in the room.`, icon: 'warning', showCancelButton: true, confirmButtonText: 'Delete', ...getSwalTheme() });
     if (!confirm.isConfirmed) return;
     const result = yjsService.deleteFile(fileName);
     if (!result.ok) { error.value = result.error; }
@@ -394,7 +454,7 @@ export function useCollaboration() {
   }
 
   async function deleteFolder(folderPath) {
-    const confirm = await Swal.fire({ title: 'Delete Folder?', text: `This will remove ${folderPath} and its files for everyone in the room.`, icon: 'warning', showCancelButton: true, confirmButtonText: 'Delete', confirmButtonColor: '#F472B6', background: '#FFFDF5', color: '#1E293B' });
+    const confirm = await Swal.fire({ title: 'Delete Folder?', text: `This will remove ${folderPath} and its files for everyone in the room.`, icon: 'warning', showCancelButton: true, confirmButtonText: 'Delete', ...getSwalTheme() });
     if (!confirm.isConfirmed) return;
     const result = yjsService.deleteFolder(folderPath);
     if (!result.ok) { error.value = result.error; }
@@ -429,7 +489,7 @@ export function useCollaboration() {
         action,
         target
       });
-    }, 120);
+    }, ACTIVITY_EMIT_DELAY_MS);
   }
 
   onBeforeUnmount(() => {
@@ -454,6 +514,7 @@ export function useCollaboration() {
     content, files, folders, explorerTree, activeFile, savedAt, dirty,
     chatMessages, chatInput, activityFeed, remoteCursors, remoteCarets,
     canJoin, canCreate, bindLifecycle, joinRoom, createPrivateRoom, generateRoomId,
+    leaveRoom,
     updateContent, selectFile, createFile, createFolder, renameFile, deleteFile, deleteFolder, saveCurrentFile,
     sendChatMessage, updateCursorPosition, hideCursorPresence, updateCaretPosition, hideCaretPresence
   };

@@ -11,6 +11,7 @@ export const useCollabStore = defineStore('collab', () => {
   const activeCount = computed(() => users.value.length);
 
   function setSession(payload) {
+    // Partial updates let flows update only roomId or username.
     roomId.value = payload.roomId || roomId.value;
     username.value = payload.username || username.value;
   }

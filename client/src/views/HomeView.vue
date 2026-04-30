@@ -1,5 +1,24 @@
 <template>
   <section class="space-y-6">
+    <div class="flex justify-end">
+      <button
+        v-if="joined"
+        type="button"
+        class="text-sm underline decoration-borderc underline-offset-4 transition-colors hover:text-ink"
+        @click="backToSecureAccess"
+      >
+        Back to Secure Room Access
+      </button>
+      <button
+        v-else
+        type="button"
+        class="text-sm underline decoration-borderc underline-offset-4 transition-colors hover:text-ink"
+        @click="goToLanding"
+      >
+        Return to Landing Page
+      </button>
+    </div>
+
     <TopNavbar
       :online="store.connected"
       :is-creator="isCreator"
@@ -70,6 +89,7 @@
 
 <script setup>
 import { onMounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
 import Swal from 'sweetalert2';
 import ChatPanel from '../components/ChatPanel.vue';
 import EditorPanel from '../components/EditorPanel.vue';
@@ -101,6 +121,7 @@ const {
   joinRoom,
   createPrivateRoom,
   generateRoomId,
+  leaveRoom,
   updateContent,
   selectFile,
   createFile,
@@ -117,6 +138,15 @@ const {
 } = useCollaboration();
 
 const joinModalOpen = ref(false);
+const router = useRouter();
+
+function goToLanding() {
+  router.push('/');
+}
+
+async function backToSecureAccess() {
+  await leaveRoom();
+}
 
 async function handleJoinFromModal(form) {
   await joinRoom(form);
@@ -139,6 +169,7 @@ async function copyToClipboard(value, label) {
 }
 
 onMounted(() => {
+  // Attach all socket listeners once when the workspace view loads.
   bindLifecycle();
 });
 </script>

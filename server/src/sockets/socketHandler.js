@@ -1,23 +1,39 @@
 ﻿import * as Y from 'yjs';
 import { RoomManager } from '../rooms/roomManager.js';
 import { createRateLimiter } from '../services/rateLimiter.js';
-import { isValidPayload, validatePassword, validateRoomId } from '../services/validation.js';
+import { isValidPayload, sanitizeName, validatePassword, validateRoomId } from '../services/validation.js';
 
 const manager = new RoomManager();
 const isLimitedGeneral = createRateLimiter(240, 60000);
 const isLimitedPresence = createRateLimiter(4000, 60000);
 
+function normalizeRoomId(roomId) {
+  return String(roomId || '').trim().toUpperCase();
+}
+
 export function registerSocketHandlers(io) {
   io.on('connection', (socket) => {
+    socket.on('room:leave', ({ roomId }, ack) => {
+      const safeRoomId = normalizeRoomId(roomId);
+      if (!validateRoomId(safeRoomId)) return ack?.({ ok: false, error: 'Invalid room ID' });
+
+      socket.leave(safeRoomId);
+      manager.removeUser(socket.id);
+      socket.data.roomId = null;
+      socket.data.username = null;
+      io.to(safeRoomId).emit('presence:update', { users: manager.getUsers(safeRoomId) });
+      ack?.({ ok: true });
+    });
+
     socket.on('room:create', ({ roomId, username, password }, ack) => {
       if (isLimitedGeneral(socket.id)) return ack?.({ ok: false, error: 'Rate limited' });
 
-      const safeName = String(username || '').replace(/[^\w\s-]/g, '').trim().slice(0, 24);
+      const safeName = sanitizeName(username);
       if (safeName.length < 2 || !validatePassword(password)) {
         return ack?.({ ok: false, error: 'Invalid username or password length (min 6)' });
       }
 
-      const safeRoomId = String(roomId || '').trim().toUpperCase();
+      const safeRoomId = normalizeRoomId(roomId);
       if (!safeRoomId) return ack?.({ ok: false, error: 'Generate or enter a room ID first' });
       if (!validateRoomId(safeRoomId)) return ack?.({ ok: false, error: 'Invalid room ID format' });
       if (manager.getRoom(safeRoomId)) return ack?.({ ok: false, error: 'Room ID already exists' });
@@ -39,7 +55,7 @@ export function registerSocketHandlers(io) {
       const check = isValidPayload({ roomId, username });
       if (!check.valid) return ack?.({ ok: false, error: 'Invalid room or name' });
 
-      const safeRoom = roomId.trim();
+      const safeRoom = normalizeRoomId(roomId);
       const access = manager.verifyAccess(safeRoom, password);
       if (!access.ok) return ack?.({ ok: false, error: access.reason });
 
@@ -137,6 +153,7 @@ export function registerSocketHandlers(io) {
     });
 
     socket.on('doc:request-state', ({ roomId }) => {
+      // Late joiners request the current room snapshot before live deltas.
       if (!validateRoomId(roomId)) return;
       const room = manager.getRoom(roomId);
       if (!room) return;
@@ -145,6 +162,7 @@ export function registerSocketHandlers(io) {
     });
 
     socket.on('doc:update', ({ roomId, update }) => {
+      // Y.js update packets are replicated to other peers in the same room.
       if (!validateRoomId(roomId) || !Array.isArray(update)) return;
 
       const room = manager.getRoom(roomId);

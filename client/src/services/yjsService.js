@@ -194,6 +194,55 @@ class YjsRoomBinding {
     }, 'local');
   }
 
+  applyTextInput(fileName, operation) {
+    if (!this.filesMap) return false;
+    const text = this.filesMap.get(normalizePath(fileName));
+    if (!(text instanceof Y.Text)) return false;
+
+    const inputType = String(operation?.inputType || '');
+    const current = text.toString();
+    const max = current.length;
+    const start = Math.max(0, Math.min(max, Number(operation?.start) || 0));
+    const end = Math.max(start, Math.min(max, Number(operation?.end) || start));
+    const rawData = operation?.data == null ? '' : String(operation.data);
+    const isInsert = inputType.startsWith('insert');
+    const isDelete = inputType.startsWith('delete');
+    const isReplace = inputType === 'insertReplacementText' || inputType === 'insertFromPaste';
+
+    if (!isInsert && !isDelete && !isReplace) return false;
+
+    this.doc.transact(() => {
+      if (isDelete) {
+        if (end > start) {
+          text.delete(start, end - start);
+          return;
+        }
+        if (inputType === 'deleteContentBackward' && start > 0) {
+          text.delete(start - 1, 1);
+          return;
+        }
+        if (inputType === 'deleteContentForward' && start < max) {
+          text.delete(start, 1);
+        }
+        return;
+      }
+
+      let insertText = rawData;
+      if (inputType === 'insertParagraph' || inputType === 'insertLineBreak') {
+        insertText = '\n';
+      }
+
+      if (end > start) {
+        text.delete(start, end - start);
+      }
+      if (insertText) {
+        text.insert(start, insertText);
+      }
+    }, 'local');
+
+    return true;
+  }
+
   saveFile(fileName) {
     const key = normalizePath(fileName);
     if (!this.savedMap || !this.filesMap?.has(key)) return { ok: false, error: 'File not found' };

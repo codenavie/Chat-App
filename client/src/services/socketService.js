@@ -8,6 +8,7 @@ class SocketService {
   }
 
   connect() {
+    // Keep a singleton socket to avoid duplicate event streams.
     if (!this.socket) {
       this.socket = io(SOCKET_URL, {
         transports: ['websocket'],

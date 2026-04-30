@@ -1,5 +1,7 @@
-﻿import crypto from 'node:crypto';
+import crypto from 'node:crypto';
 import * as Y from 'yjs';
+
+const MESSAGE_HISTORY_LIMIT = 100;
 
 function hashPassword(password) {
   return crypto.createHash('sha256').update(String(password)).digest('hex');
@@ -12,6 +14,7 @@ export class RoomManager {
 
   ensureRoom(roomId, options = {}) {
     if (!this.rooms.has(roomId)) {
+      // Each room owns one CRDT document for conflict-free collaboration.
       const doc = new Y.Doc();
       const filesMap = doc.getMap('files');
       const savedMap = doc.getMap('savedAt');
@@ -29,6 +32,7 @@ export class RoomManager {
         createdAt: Date.now()
       });
     }
+
     return this.rooms.get(roomId);
   }
 
@@ -62,6 +66,7 @@ export class RoomManager {
         return roomId;
       }
     }
+
     return null;
   }
 
@@ -78,16 +83,18 @@ export class RoomManager {
   getMessages(roomId) {
     const room = this.getRoom(roomId);
     if (!room) return [];
-    return room.messages.slice(-100);
+    return room.messages.slice(-MESSAGE_HISTORY_LIMIT);
   }
 
   addMessage(roomId, message) {
     const room = this.getRoom(roomId);
     if (!room) return null;
+
     room.messages.push(message);
-    if (room.messages.length > 100) {
-      room.messages = room.messages.slice(-100);
+    if (room.messages.length > MESSAGE_HISTORY_LIMIT) {
+      room.messages = room.messages.slice(-MESSAGE_HISTORY_LIMIT);
     }
+
     return message;
   }
 }
