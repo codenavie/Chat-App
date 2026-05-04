@@ -10,12 +10,6 @@ function normalizePath(input) {
     .join('/');
 }
 
-function parentFolder(path) {
-  const normalized = normalizePath(path);
-  const parts = normalized.split('/');
-  parts.pop();
-  return parts.join('/');
-}
 
 class YjsRoomBinding {
   constructor() {
@@ -333,9 +327,6 @@ class YjsRoomBinding {
     this.roomId = null;
   }
 
-  getParentFolder(path) {
-    return parentFolder(path);
-  }
 }
 
 export default new YjsRoomBinding();

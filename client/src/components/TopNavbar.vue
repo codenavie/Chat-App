@@ -1,32 +1,45 @@
 <template>
-  <header class="play-card mb-6 overflow-hidden px-6 py-5">
-    <div class="relative flex flex-wrap items-center justify-between gap-4">
+  <header class="w-full border-b border-borderc/70 bg-panel backdrop-blur-xl">
+    <div class="mx-auto flex w-full items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
       <div>
-        <p class="font-mono text-xs uppercase tracking-[0.15em] text-accent">Real-Time Playground</p>
-        <h1 class="font-display text-4xl font-normal tracking-tight text-ink">
-          Developer Collaboration Platform
-        </h1>
+        <p class="font-mono text-xs uppercase tracking-[0.2em] text-accent">Real Time Playground</p>
+        <h1 class="font-display text-3xl tracking-tight text-ink sm:text-4xl">Developer Collaboration Platform</h1>
       </div>
 
       <div class="flex flex-wrap items-center justify-end gap-3">
-        <div
-          v-if="isCreator && creatorRoomInfo?.roomId && creatorRoomInfo?.password"
-          class="flex flex-wrap items-center gap-2 rounded-md border border-borderc bg-muted px-3 py-1.5"
-        >
-          <span class="font-mono text-[10px] uppercase tracking-[0.15em] text-textmuted">Room</span>
-          <span class="rounded-md border border-borderc bg-panel px-2 py-1 font-mono text-xs text-ink">{{ creatorRoomInfo.roomId }}</span>
-          <button class="ui-btn ui-btn-muted px-2 py-1 text-[10px] font-semibold uppercase" @click="$emit('copy-room-id', creatorRoomInfo.roomId)">Copy ID</button>
-          <span class="rounded-md border border-borderc bg-panel px-2 py-1 font-mono text-xs text-ink">{{ creatorRoomInfo.password }}</span>
-          <button class="ui-btn ui-btn-muted px-2 py-1 text-[10px] font-semibold uppercase" @click="$emit('copy-password', creatorRoomInfo.password)">Copy PW</button>
+        <div class="status-pill flex items-center gap-2">
+          <span class="relative inline-flex h-2.5 w-2.5">
+            <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500/70"></span>
+            <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
+          </span>
+          <span>ONLINE · {{ sessions }} sessions</span>
         </div>
 
-        <div class="status-pill flex items-center gap-2">
-          <span class="h-2.5 w-2.5 rounded-full" :class="online ? 'bg-green-600' : 'bg-slate-400'" />
-          <span>{{ online ? 'ONLINE' : 'OFFLINE' }}</span>
-        </div>
+        <span class="hidden h-6 w-px bg-borderc md:block" aria-hidden="true"></span>
+
         <button class="ui-btn ui-btn-muted px-2 py-1" type="button" :aria-label="theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'" @click="toggleTheme">
           <Sun v-if="theme === 'dark'" class="h-4 w-4" :stroke-width="2" />
           <Moon v-else class="h-4 w-4" :stroke-width="2" />
+        </button>
+
+        <span class="hidden h-6 w-px bg-borderc md:block" aria-hidden="true"></span>
+
+        <button
+          v-if="showBackSecure"
+          type="button"
+          class="font-mono text-xs text-textmuted underline decoration-borderc underline-offset-4 transition-colors hover:text-ink"
+          @click="$emit('back-secure')"
+        >
+          Back to Secure Room Access
+        </button>
+
+        <button
+          v-if="showReturnLink"
+          type="button"
+          class="font-mono text-xs text-textmuted underline decoration-borderc underline-offset-4 transition-colors hover:text-ink"
+          @click="$emit('return')"
+        >
+          Return to Landing Page
         </button>
       </div>
     </div>
@@ -37,7 +50,7 @@
 import { onMounted, ref, watch } from 'vue';
 import { Moon, Sun } from 'lucide-vue-next';
 
-defineEmits(['copy-room-id', 'copy-password']);
+defineEmits(['return', 'back-secure']);
 
 const theme = ref('light');
 
@@ -66,20 +79,17 @@ watch(theme, (nextTheme) => {
 });
 
 defineProps({
-  online: {
+  sessions: {
+    type: Number,
+    default: 14
+  },
+  showReturnLink: {
     type: Boolean,
     default: false
   },
-  isCreator: {
+  showBackSecure: {
     type: Boolean,
     default: false
-  },
-  creatorRoomInfo: {
-    type: Object,
-    default: () => ({
-      roomId: '',
-      password: ''
-    })
   }
 });
 </script>

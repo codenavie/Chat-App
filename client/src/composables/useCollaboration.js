@@ -93,7 +93,6 @@ export function useCollaboration() {
   }
 
   const explorerTree = computed(() => buildExplorerTree(folders.value, files.value));
-  const canJoin = computed(() => roomRegex.test(store.roomId) && store.username.trim().length >= 2 && store.password.length >= 6);
   const canCreate = computed(() => roomRegex.test(store.roomId) && store.username.trim().length >= 2 && store.password.length >= 6);
 
   function getSwalTheme() {
@@ -513,7 +512,7 @@ export function useCollaboration() {
     store, loading, error, joined, isCreator, creatorRoomInfo,
     content, files, folders, explorerTree, activeFile, savedAt, dirty,
     chatMessages, chatInput, activityFeed, remoteCursors, remoteCarets,
-    canJoin, canCreate, bindLifecycle, joinRoom, createPrivateRoom, generateRoomId,
+    canCreate, bindLifecycle, joinRoom, createPrivateRoom, generateRoomId,
     leaveRoom,
     updateContent, selectFile, createFile, createFolder, renameFile, deleteFile, deleteFolder, saveCurrentFile,
     sendChatMessage, updateCursorPosition, hideCursorPresence, updateCaretPosition, hideCaretPresence
